@@ -8,11 +8,14 @@ from ultralytics import YOLO
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", required=True, help="Path to best.pt")
+    parser = argparse.ArgumentParser(description='交通标志检测推理脚本')
+    parser.add_argument("--model", default="runs/detect/train_optimized/weights/best.pt", help="Path to best.pt")
     parser.add_argument("--test-dir", default="test/images", help="Directory of test images")
     parser.add_argument("--output", default="submission.csv", help="Output CSV path")
-    parser.add_argument("--conf", type=float, default=0.001, help="Confidence threshold")
+    parser.add_argument("--conf", type=float, default=0.0005, help="Confidence threshold")
+    parser.add_argument("--iou", type=float, default=0.5, help="NMS IoU threshold")
+    parser.add_argument("--imgsz", type=int, default=640, help="Inference image size")
+    parser.add_argument("--augment", action="store_true", help="Use test-time augmentation")
     args = parser.parse_args()
 
     model = YOLO(args.model)
@@ -26,23 +29,41 @@ def main() -> None:
             fieldnames=["image_id", "class_id", "x_center", "y_center", "width", "height", "confidence"],
         )
         writer.writeheader()
-        for result in model.predict(source=[str(p) for p in image_paths], conf=args.conf, save=False, verbose=False):
+        
+        for i, img_path in enumerate(image_paths):
+            if (i + 1) % 20 == 0:
+                print(f"处理进度: {i+1}/{len(image_paths)}")
+            
+            result = model.predict(
+                source=str(img_path), 
+                conf=args.conf, 
+                iou=args.iou,
+                imgsz=args.imgsz,
+                augment=args.augment,
+                save=False, 
+                verbose=False
+            )[0]
+            
             image_id = Path(result.path).name
             if result.boxes is None:
                 continue
             for box in result.boxes:
                 x_center, y_center, width, height = box.xywhn[0].tolist()
-                writer.writerow(
-                    {
-                        "image_id": image_id,
-                        "class_id": int(box.cls[0].item()),
-                        "x_center": x_center,
-                        "y_center": y_center,
-                        "width": width,
-                        "height": height,
-                        "confidence": float(box.conf[0].item()),
-                    }
-                )
+                conf = float(box.conf[0].item())
+                if conf > args.conf:
+                    writer.writerow(
+                        {
+                            "image_id": image_id,
+                            "class_id": int(box.cls[0].item()),
+                            "x_center": x_center,
+                            "y_center": y_center,
+                            "width": width,
+                            "height": height,
+                            "confidence": conf,
+                        }
+                    )
+    
+    print(f"\n推理完成！结果已保存到: {args.output}")
 
 
 if __name__ == "__main__":

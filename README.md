@@ -6,26 +6,43 @@
 
 ```
 .
-├── code/              # 实验代码
-│   ├── train_model.py  # 训练脚本
-│   ├── run_infer.py    # 推理脚本
-│   ├── baseline_infer.py # 基准推理脚本
-│   └── data.yaml      # 数据配置文件
-├── report/            # 实验报告
-│   └── 第四次实验报告.md  # 第四次实验报告
-├── results/           # 实验结果
-│   ├── results.csv    # 训练结果数据
-│   ├── results.png    # 训练结果图表
-│   ├── BoxPR_curve.png # PR曲线
+├── code/                    # 实验代码
+│   ├── train_model.py      # 优化训练脚本（YOLOv8s）
+│   ├── run_infer.py        # 优化推理脚本
+│   ├── baseline_infer.py   # 基准推理脚本（支持TTA）
+│   ├── data.yaml           # 数据配置文件
+│   └── README.md           # 代码目录说明
+├── report/                 # 实验报告
+│   └── 第四次实验报告.md   # 第四次实验报告
+├── results/                # 实验结果
+│   ├── results.csv         # 训练结果数据
+│   ├── results.png         # 训练结果图表
+│   ├── BoxPR_curve.png      # PR曲线
 │   └── confusion_matrix.png # 混淆矩阵
-└── README.md          # 本文件
+└── README.md               # 本文件
 ```
+
+## 主要优化
+
+### 训练优化
+- **模型升级**: YOLOv8n → YOLOv8s (Small版本，准确率更高)
+- **图像尺寸**: 416 → 640 (更好的小目标检测)
+- **训练轮数**: 50 → 100 epochs
+- **数据增强**: Mosaic (1.0), MixUp (0.1), Copy-Paste (0.1)
+- **优化器**: SGD with Cosine LR Scheduler
+- **早停机制**: patience=50
+
+### 推理优化
+- **测试时增强 (TTA)**: 提高检测鲁棒性
+- **多尺度检测**: 640x640 图像尺寸
+- **低置信度阈值**: 0.0005 (捕获更多检测)
+- **NMS优化**: IoU=0.5
 
 ## 实验内容
 
 ### 第四次实验
 - **任务**: 交通标志目标检测
-- **模型**: YOLOv8
+- **模型**: YOLOv8s
 - **GPU**: NVIDIA GeForce RTX 4060 Laptop GPU
 - **主要指标**:
   - mAP@0.5: 94.43%
@@ -41,15 +58,18 @@ cd code
 python train_model.py
 ```
 
-### 推理
+### 推理生成提交文件
 ```bash
 cd code
 python run_infer.py
+
+# 或使用基准推理脚本（支持更多参数）
+python baseline_infer.py --model runs/detect/train_optimized/weights/best.pt --test-dir test/images --output submission.csv --augment
 ```
 
 ## 提交文件
 
-比赛提交文件位于: `code/submission.csv`
+比赛提交文件位于: `code/submission_optimized.csv`
 
 ## Git使用说明
 

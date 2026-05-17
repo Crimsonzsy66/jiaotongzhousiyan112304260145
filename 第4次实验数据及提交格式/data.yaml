@@ -2,7 +2,6 @@ path: .
 train: train/images
 val: val/images
 test: test/images
-
 nc: 15
 names:
   0: Green Light
@@ -20,13 +19,3 @@ names:
   12: Speed Limit 80
   13: Speed Limit 90
   14: Stop
-
-augment: true
- mosaic: 1.0
- mixup: 0.1
- copy_paste: 0.1
-
-imgsz: 640
-batch: 16
-epochs: 100
-patience: 50
